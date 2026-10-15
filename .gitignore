@@ -7,3 +7,5 @@ venv/
 progress.json
 gate-ace-progress-*.json
 .DS_Store
+gate_ace_progress.db
+gate_ace_lessons.db

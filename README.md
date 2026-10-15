@@ -26,8 +26,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Progress lives in your browser session. Use **Download progress** in the sidebar to save it and **Upload** to restore it.
-When running on your own machine you can auto-save instead:
+Without sign-in configured, the app runs in guest mode: progress lives in the browser session, and students use
+**Download progress** / **Upload** in the sidebar to keep it. When running on your own machine you can auto-save instead:
 
 ```bash
 GATE_ACE_AUTOSAVE=~/gate-progress.json streamlit run app.py
@@ -38,6 +38,35 @@ GATE_ACE_AUTOSAVE=~/gate-progress.json streamlit run app.py
 1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
 2. **Create app** → pick this repo, branch `main`, main file `app.py` → **Deploy**.
 3. *(Optional)* In **App settings → Secrets**, add `GEMINI_API_KEY = "..."` so every visitor gets a working AI tutor without their own key. See `.streamlit/secrets.toml.example`.
+
+## Turn on Google sign-in (progress saved per student)
+
+Students click **Sign in with Google**; after that every answer, mock score, plan setting and tracker rating is saved
+automatically and follows them to any device. Guests can still use everything, and a guest's downloaded progress file
+can be uploaded after signing in to merge it into their account.
+
+**1 · Free database (Supabase, ~3 min)** — Community Cloud doesn't keep files between restarts, so progress lives here.
+1. Create a free project at [supabase.com](https://supabase.com) (choose the Mumbai / `ap-south-1` region for India).
+2. Click **Connect** → copy the **Transaction pooler** connection string and put your database password in it.
+3. Change the start from `postgresql://` to `postgresql+psycopg2://`. The app creates its table itself.
+
+Free tier: 500 MB (plenty for tens of thousands of students). A free project pauses after a week with no activity;
+restore it from the Supabase dashboard.
+
+**2 · Google login client (~5 min)**
+1. In [Google Cloud Console](https://console.cloud.google.com/) create a project → **APIs & Services → OAuth consent
+   screen** → External, add the app name and your email → publish it.
+2. **Credentials → Create credentials → OAuth client ID → Web application.**
+3. Under **Authorized redirect URIs** add `https://YOUR-APP.streamlit.app/oauth2callback`
+   (and `http://localhost:8501/oauth2callback` for local testing).
+4. Copy the client ID and client secret.
+
+**3 · Paste the secrets** into Streamlit Cloud → your app → **Settings → Secrets**, following
+[`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example): the `[auth]` block, the
+`[connections.progress_db]` block, and optionally `GEMINI_API_KEY`. Save — the app restarts with sign-in enabled.
+
+If `[auth]` is set but no database is, progress is stored in a local SQLite file: fine on your own computer, but
+it is wiped whenever Community Cloud restarts the app.
 
 ## Free AI keys
 
