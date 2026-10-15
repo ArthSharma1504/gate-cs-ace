@@ -1,8 +1,8 @@
 """Session state and progress persistence.
 
 Progress lives in st.session_state["progress"].
-- Signed in with Google (st.login): loaded from and saved to the database after every change.
-- Guest: kept for the browser session only; students can download it as JSON and upload it later.
+- Signed-in users (listed in secrets): loaded from and saved to storage after every change.
+- Guests: kept only while the browser tab is open; it is never saved.
 - Local runs can also set GATE_ACE_AUTOSAVE=/path/progress.json to save to a file.
 """
 from __future__ import annotations
@@ -70,41 +70,70 @@ def combine(a: dict, b: dict) -> dict:
     return out
 
 
-# ------------------------------------------------------------------ sign-in
-def auth_enabled() -> bool:
+# ------------------------------------------------------------------ sign-in (invited users only)
+def _users() -> dict:
+    """Users from Streamlit secrets:  [users.<username>]  password = "…"  name = "…" """
     try:
-        return "auth" in st.secrets
+        users = st.secrets.get("users", {})
+        return {str(k).lower(): dict(v) for k, v in users.items()}
     except Exception:  # no secrets file
+        return {}
+
+
+def auth_enabled() -> bool:
+    return bool(_users())
+
+
+def login(username: str, password: str) -> bool:
+    import hmac
+    import time
+
+    u = _users().get((username or "").strip().lower())
+    ok = bool(u) and hmac.compare_digest(str(u.get("password", "")).encode(), (password or "").encode())
+    if not ok:
+        time.sleep(1)  # slow down password guessing
         return False
+    uname = username.strip().lower()
+    st.session_state._auth_user = {"id": uname, "email": None, "name": u.get("name") or username.strip()}
+    return True
+
+
+def logout() -> None:
+    for k in ("_auth_user", "progress", "_owner", "_store_error"):
+        st.session_state.pop(k, None)
 
 
 def current_user() -> dict | None:
-    """{"id", "email", "name"} for a signed-in student, else None."""
-    if not auth_enabled():
-        return None
-    try:
-        if not st.user.is_logged_in:
-            return None
-        uid = st.user.get("sub") or st.user.get("email")
-        return {"id": str(uid), "email": st.user.get("email"), "name": st.user.get("name") or st.user.get("email")}
-    except Exception:
-        return None
+    """{"id", "email", "name"} for a signed-in user, else None."""
+    u = st.session_state.get("_auth_user")
+    if u and u["id"] in _users():
+        return u
+    return None
 
 
 def init() -> None:
     user = current_user()
     owner = user["id"] if user else None
-    if "progress" in st.session_state and st.session_state.get("_owner") == owner:
+    same_owner = "progress" in st.session_state and st.session_state.get("_owner") == owner
+    if same_owner and not (user and st.session_state.get("_load_failed")):
         return
+    guest_work = st.session_state.get("progress") if st.session_state.get("_owner") is None else None
     prog = default_progress()
     if user:
         try:
             saved = store.load(user["id"])
-            if saved:
-                prog = _merge(saved)
+            prog = _merge(saved) if saved else default_progress()
+            if guest_work and guest_work.get("attempts"):
+                prog = combine(prog, guest_work)  # keep what they did before signing in
+            st.session_state._load_failed = False
             st.session_state.pop("_store_error", None)
-        except Exception as e:  # database down: keep working, warn in the sidebar
+        except Exception as e:
+            # Could not read saved progress. Never save over it with an empty record: block saving
+            # until a later page load reads it successfully.
+            st.session_state._load_failed = True
             st.session_state._store_error = str(e)
+            if same_owner:
+                return
     elif AUTOSAVE and Path(AUTOSAVE).exists():
         try:
             prog = _merge(json.loads(Path(AUTOSAVE).read_text()))
@@ -112,6 +141,8 @@ def init() -> None:
             pass
     st.session_state.progress = prog
     st.session_state._owner = owner
+    if user and guest_work and guest_work.get("attempts") and not st.session_state.get("_load_failed"):
+        save()
 
 
 def P() -> dict:
@@ -122,6 +153,8 @@ def P() -> dict:
 def save() -> None:
     user = current_user()
     if user:
+        if st.session_state.get("_load_failed"):
+            return
         try:
             store.save(user["id"], user["email"], P())
             st.session_state.pop("_store_error", None)
@@ -139,7 +172,7 @@ def export_json() -> str:
 
 
 def import_json(text: str) -> None:
-    """Uploading a progress file merges it into the current progress (nothing is overwritten)."""
+    """Merge a progress file into the current progress (nothing is overwritten). Signed-in users only."""
     st.session_state.progress = combine(P(), json.loads(text))
     save()
 

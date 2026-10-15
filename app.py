@@ -3,7 +3,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from gate import ai, state, ui
+from gate import ai, state, store, ui
 
 st.set_page_config(page_title="GATE CS Ace", page_icon="🎯", layout="wide")
 state.init()
@@ -26,23 +26,6 @@ pages = {
 }
 nav = st.navigation(pages)
 
-def progress_file_tools(expanded_label: str | None = None) -> None:
-    box = st.expander(expanded_label) if expanded_label else st.container()
-    with box:
-        st.download_button("⬇️ Download progress", state.export_json(),
-                           file_name=f"gate-ace-progress-{datetime.now():%Y%m%d}.json",
-                           mime="application/json", width="stretch")
-        up = st.file_uploader("Upload progress", type="json", label_visibility="collapsed")
-        if up is not None and st.session_state.get("_last_upload") != up.file_id:
-            try:
-                state.import_json(up.getvalue().decode("utf-8"))
-                st.session_state._last_upload = up.file_id
-                st.toast("Progress file added to your progress.", icon="✅")
-                st.rerun()
-            except (ValueError, UnicodeDecodeError, KeyError, TypeError):
-                st.error("That file isn't a valid progress file.")
-
-
 with st.sidebar:
     st.markdown("### 🎯 GATE CS Ace")
     d = state.days_left()
@@ -51,27 +34,35 @@ with st.sidebar:
     user = state.current_user()
     if user:
         st.markdown(f"👤 **{user['name']}**")
-        if st.session_state.get("_store_error"):
-            st.error("Couldn't reach the progress database, so recent work may not be saved. "
-                     "Download a backup below.")
-        else:
+        if st.session_state.get("_load_failed"):
+            st.error("Couldn't load your saved progress, so saving is paused to protect it. "
+                     "Refresh the page in a minute.")
+        elif st.session_state.get("_store_error"):
+            st.warning("Couldn't save your latest progress. It will retry with your next answer.")
+        elif store.is_persistent():
             st.caption("✅ Your progress saves automatically.")
+        else:
+            st.caption("⚠️ Saving to this server only. Ask the app owner to add GITHUB_TOKEN so progress "
+                       "survives restarts.")
+        st.download_button("⬇️ Download a backup", state.export_json(),
+                           file_name=f"gate-ace-{user['id']}-{datetime.now():%Y%m%d}.json",
+                           mime="application/json", width="stretch")
         if st.button("Sign out", width="stretch"):
-            st.logout()
-        progress_file_tools("Backup or import a progress file")
-    elif state.auth_enabled():
-        st.markdown("**Save your progress**")
-        st.caption("Sign in so your practice, mocks and plan are saved and follow you to any device.")
-        if st.button("Sign in with Google", type="primary", width="stretch", icon=":material/login:"):
-            st.login()
-        if state.P()["attempts"]:
-            st.caption("Already practised as a guest? Download your progress first, then upload it after "
-                       "signing in and it will be added to your account.")
-        progress_file_tools("Guest progress file")
+            state.logout()
+            st.rerun()
     else:
-        st.markdown("**Your progress file**")
-        st.caption("Progress is kept in this browser session. Download it to keep it, upload it next time.")
-        progress_file_tools()
+        if state.auth_enabled():
+            with st.expander("🔑 Member sign-in"):
+                with st.form("login", clear_on_submit=False, border=False):
+                    uname = st.text_input("Username", key="login_user")
+                    pwd = st.text_input("Password", type="password", key="login_pwd")
+                    if st.form_submit_button("Sign in", type="primary", width="stretch"):
+                        if state.login(uname, pwd):
+                            st.rerun()
+                        else:
+                            st.error("Wrong username or password.")
+        st.caption("👋 You're using guest mode — every feature works, but progress isn't saved and is "
+                   "lost when you close the tab.")
 
 ai.settings_sidebar()
 nav.run()

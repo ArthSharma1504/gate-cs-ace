@@ -17,13 +17,8 @@ user = state.current_user()
 if user:
     first = (user["name"] or "").split(" ")[0]
     st.markdown(f"Welcome back{', ' + first if first else ''} 👋")
-elif state.auth_enabled():
-    with st.container(border=True):
-        a, b = st.columns([3, 1], vertical_alignment="center")
-        a.markdown("**Sign in to save your progress.** Your practice, mock scores, study plan and syllabus "
-                   "tracker are kept safe and follow you to your phone or laptop.")
-        if b.button("Sign in with Google", type="primary", key="home_login", width="stretch"):
-            st.login()
+else:
+    st.caption("Guest mode: everything works, but progress isn't saved after you close the tab.")
 
 attempts = prog["attempts"]
 acc = (sum(a["correct"] for a in attempts) / len(attempts)) if attempts else None

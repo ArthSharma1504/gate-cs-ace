@@ -27,8 +27,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Without sign-in configured, the app runs in guest mode: progress lives in the browser session, and students use
-**Download progress** / **Upload** in the sidebar to keep it. When running on your own machine you can auto-save instead:
+Without any `[users]` in secrets, everyone uses guest mode (progress isn't saved). On your own machine you can
+auto-save guest progress to a file instead:
 
 ```bash
 GATE_ACE_AUTOSAVE=~/gate-progress.json streamlit run app.py
@@ -40,34 +40,41 @@ GATE_ACE_AUTOSAVE=~/gate-progress.json streamlit run app.py
 2. **Create app** → pick this repo, branch `main`, main file `app.py` → **Deploy**.
 3. *(Optional)* In **App settings → Secrets**, add `GEMINI_API_KEY = "..."` so every visitor gets a working AI tutor without their own key. See `.streamlit/secrets.toml.example`.
 
-## Turn on Google sign-in (progress saved per student)
+## Member sign-in (only the people you choose can save progress)
 
-Students click **Sign in with Google**; after that every answer, mock score, plan setting and tracker rating is saved
-automatically and follows them to any device. Guests can still use everything, and a guest's downloaded progress file
-can be uploaded after signing in to merge it into their account.
+Anyone can open the app and use every feature as a **guest**, but guests' progress is never saved and there is no
+download/upload option. Only the users you list in the app's Secrets can sign in, and their progress is saved
+automatically after every answer, so it's there on any device.
 
-**1 · Free database (Supabase, ~3 min)** — Community Cloud doesn't keep files between restarts, so progress lives here.
-1. Create a free project at [supabase.com](https://supabase.com) (choose the Mumbai / `ap-south-1` region for India).
-2. Click **Connect** → copy the **Transaction pooler** connection string and put your database password in it.
-3. Change the start from `postgresql://` to `postgresql+psycopg2://`. The app creates its table itself.
+**Setup — about 3 minutes, all on two web pages:**
 
-Free tier: 500 MB (plenty for tens of thousands of students). A free project pauses after a week with no activity;
-restore it from the Supabase dashboard.
+1. **Create a GitHub token** (this is where the members' progress is stored, in one *private* gist in your account):
+   open [this link](https://github.com/settings/tokens/new?scopes=gist&description=GATE%20CS%20Ace), make sure
+   **only "gist"** is ticked, choose an expiry (e.g. "No expiration" or 1 year), click **Generate token**, and copy it.
+2. **Paste the secrets:** on [share.streamlit.io](https://share.streamlit.io) open your app → **⋮ → Settings →
+   Secrets**, paste the block below with your own usernames, names and passwords, and **Save**:
 
-**2 · Google login client (~5 min)**
-1. In [Google Cloud Console](https://console.cloud.google.com/) create a project → **APIs & Services → OAuth consent
-   screen** → External, add the app name and your email → publish it.
-2. **Credentials → Create credentials → OAuth client ID → Web application.**
-3. Under **Authorized redirect URIs** add `https://YOUR-APP.streamlit.app/oauth2callback`
-   (and `http://localhost:8501/oauth2callback` for local testing).
-4. Copy the client ID and client secret.
+```toml
+[users.arth]
+name = "Arth"
+password = "choose-a-long-password"
 
-**3 · Paste the secrets** into Streamlit Cloud → your app → **Settings → Secrets**, following
-[`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example): the `[auth]` block, the
-`[connections.progress_db]` block, and optionally `GEMINI_API_KEY`. Save — the app restarts with sign-in enabled.
+[users.friend]
+name = "Friend's name"
+password = "another-long-password"
 
-If `[auth]` is set but no database is, progress is stored in a local SQLite file: fine on your own computer, but
-it is wiped whenever Community Cloud restarts the app.
+GITHUB_TOKEN = "ghp_paste-your-token-here"
+```
+
+The app restarts and shows **🔑 Member sign-in** in the sidebar. To add a third person later, add another
+`[users.name]` block. To remove someone, delete their block.
+
+Notes
+- Usernames aren't case-sensitive. Use long passwords; anyone who knows one can sign in as that user.
+- If a member practised as a guest first and then signs in, that session's work is added to their account.
+- If GitHub can't be reached when a member signs in, saving pauses (so their saved progress is never overwritten)
+  until the page is refreshed.
+- Prefer a database? Add a `[connections.progress_db]` URL (any Postgres, e.g. free Supabase) and it's used instead.
 
 ## Free AI keys
 
