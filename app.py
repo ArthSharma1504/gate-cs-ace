@@ -42,8 +42,8 @@ with st.sidebar:
         elif store.is_persistent():
             st.caption("✅ Your progress saves automatically.")
         else:
-            st.caption("⚠️ Saving to this server only. Ask the app owner to add GITHUB_TOKEN so progress "
-                       "survives restarts.")
+            st.caption("⚠️ Saving to this server only (lost on restart). Add GITHUB_TOKEN at the top of the app's "
+                       "Secrets so progress is kept permanently.")
         st.download_button("⬇️ Download a backup", state.export_json(),
                            file_name=f"gate-ace-{user['id']}-{datetime.now():%Y%m%d}.json",
                            mime="application/json", width="stretch")

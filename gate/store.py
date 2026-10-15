@@ -38,10 +38,21 @@ SET email = excluded.email, data = excluded.data, updated_at = excluded.updated_
 
 
 def _secret(name: str):
+    """Read a top-level secret. Also finds it if it was pasted below a [section] header by mistake
+    (in TOML, every line after a header belongs to that section, e.g. [users.friend])."""
     try:
-        return st.secrets.get(name)
+        if st.secrets.get(name):
+            return st.secrets.get(name)
+        for _, section in st.secrets.items():
+            if hasattr(section, "get"):
+                if section.get(name):
+                    return section.get(name)
+                for _, sub in section.items():
+                    if hasattr(sub, "get") and sub.get(name):
+                        return sub.get(name)
     except Exception:  # no secrets file at all
         return None
+    return None
 
 
 def _secrets_has_db() -> bool:

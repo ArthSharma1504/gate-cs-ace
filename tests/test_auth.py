@@ -172,3 +172,13 @@ def test_combine_keeps_both_sides():
     c = state.combine(a, b)
     assert [x["qid"] for x in c["attempts"]] == ["GA01", "GA02"]
     assert c["bookmarks"] == ["EM01"] and c["topic_status"][s][t] == 3
+
+
+def test_token_found_even_when_pasted_under_a_user_section(gist):
+    users = {"arth": dict(USERS["arth"]), "riya": dict(USERS["riya"], GITHUB_TOKEN="tok")}
+    at = app({"users": users})
+    sign_in(at, "arth", "pw-arth-123")
+    assert any("saves automatically" in c.value for c in at.sidebar.caption)
+    answer_one(at)
+    (_, g), = gist.gists.items()
+    assert "progress-arth.json" in g["files"]

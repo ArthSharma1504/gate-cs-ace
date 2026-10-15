@@ -66,10 +66,8 @@ def current_key() -> str | None:
 
 
 def _secret_key(provider: str) -> str | None:
-    try:
-        return st.secrets.get(PROVIDERS[provider]["secret"]) or None
-    except Exception:
-        return None
+    from gate.store import _secret
+    return _secret(PROVIDERS[provider]["secret"]) or None
 
 
 def get_key(provider: str) -> str | None:

@@ -75,7 +75,7 @@ def _users() -> dict:
     """Users from Streamlit secrets:  [users.<username>]  password = "…"  name = "…" """
     try:
         users = st.secrets.get("users", {})
-        return {str(k).lower(): dict(v) for k, v in users.items()}
+        return {str(k).lower(): dict(v) for k, v in users.items() if hasattr(v, "get") and v.get("password")}
     except Exception:  # no secrets file
         return {}
 

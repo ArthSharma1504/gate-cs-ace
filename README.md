@@ -55,6 +55,8 @@ automatically after every answer, so it's there on any device.
    Secrets**, paste the block below with your own usernames, names and passwords, and **Save**:
 
 ```toml
+GITHUB_TOKEN = "ghp_paste-your-token-here"
+
 [users.arth]
 name = "Arth"
 password = "choose-a-long-password"
@@ -62,9 +64,10 @@ password = "choose-a-long-password"
 [users.friend]
 name = "Friend's name"
 password = "another-long-password"
-
-GITHUB_TOKEN = "ghp_paste-your-token-here"
 ```
+
+Keep `GITHUB_TOKEN` (and `GEMINI_API_KEY`, if you add one) **above** the `[users…]` lines — in this format every
+line after a `[section]` header belongs to that section. (The app also finds the token if it was pasted lower down.)
 
 The app restarts and shows **🔑 Member sign-in** in the sidebar. To add a third person later, add another
 `[users.name]` block. To remove someone, delete their block.
