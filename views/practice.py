@@ -23,7 +23,9 @@ with st.container(border=True):
     types = c3.multiselect("Type", ["MCQ", "MSQ", "NAT"], placeholder="All types")
     diffs = c4.multiselect("Difficulty", ["easy", "medium", "hard"], placeholder="Any difficulty")
     topics_all = [t for s in (subjects or SUBJECTS) for t in SYLLABUS[s]["topics"]]
-    topics = c5.multiselect("Topics", topics_all, placeholder="All topics")
+    if any(t not in topics_all for t in st.session_state.get("pr_topics", [])):
+        st.session_state.pr_topics = [t for t in st.session_state.pr_topics if t in topics_all]
+    topics = c5.multiselect("Topics", topics_all, placeholder="All topics", key="pr_topics")
 
 pool = [
     q for q in bank

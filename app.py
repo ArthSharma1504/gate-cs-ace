@@ -3,7 +3,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from gate import state, ui
+from gate import ai, state, ui
 
 st.set_page_config(page_title="GATE CS Ace", page_icon="🎯", layout="wide")
 state.init()
@@ -12,6 +12,7 @@ ui.style()
 pages = {
     "Prepare": [
         st.Page("views/home.py", title="Dashboard", icon="🏠", default=True),
+        st.Page("views/learn.py", title="Learn", icon="📚"),
         st.Page("views/practice.py", title="Practice", icon="✍️"),
         st.Page("views/mock.py", title="Mock Test", icon="⏱️"),
         st.Page("views/tutor.py", title="AI Tutor", icon="🤖"),
@@ -72,4 +73,5 @@ with st.sidebar:
         st.caption("Progress is kept in this browser session. Download it to keep it, upload it next time.")
         progress_file_tools()
 
+ai.settings_sidebar()
 nav.run()

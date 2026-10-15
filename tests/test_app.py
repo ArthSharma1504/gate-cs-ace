@@ -7,7 +7,7 @@ from streamlit.testing.v1 import AppTest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-PAGES = ["views/home.py", "views/practice.py", "views/mock.py", "views/tutor.py", "views/planner.py",
+PAGES = ["views/home.py", "views/learn.py", "views/practice.py", "views/mock.py", "views/tutor.py", "views/planner.py",
          "views/tracker.py", "views/notes.py", "views/analytics.py"]
 
 
@@ -109,3 +109,43 @@ def test_ai_parser():
           '"explanation":"e"},{"type":"MCQ","question":"bad","options":["a"],"answer":0}]'
     out = parse_generated(txt)
     assert len(out) == 2 and out[1]["answer"] == [5.0, 5.0]
+
+
+def test_every_topic_has_a_lesson():
+    from gate.data.lessons import LESSONS
+    from gate.data.syllabus import SYLLABUS
+    missing = [(s, t) for s in SYLLABUS for t in SYLLABUS[s]["topics"] if (s, t) not in LESSONS]
+    extra = [k for k in LESSONS if k[0] not in SYLLABUS or k[1] not in SYLLABUS[k[0]]["topics"]]
+    assert not missing and not extra, (missing, extra)
+    for k, md in LESSONS.items():
+        assert "### The idea" in md and "### Worked example" in md and "### Exam traps" in md, k
+        import re
+        assert not re.search(r"(?<!\\)\$", md), k  # an unescaped $ renders as LaTeX
+
+
+def test_learn_flow():
+    at = fresh()
+    at.switch_page("views/learn.py").run()
+    assert not at.exception, at.exception
+    assert any("Check yourself" in h.value for h in at.subheader)
+    # answer the first check question if the topic has one
+    if at.radio:
+        at.radio[0].set_value(0).run()
+        next(b for b in at.button if b.label == "Check").click().run()
+        assert not at.exception, at.exception
+        assert at.session_state.progress["attempts"][-1]["mode"] == "learn"
+    next(b for b in at.button if b.label == "Next topic →").click().run()
+    assert not at.exception, at.exception
+    next(b for b in at.button if b.label == "✍️ Practise this topic").click().run()
+    assert not at.exception, at.exception
+
+
+def test_ai_key_survives_page_changes():
+    at = fresh()
+    at.sidebar.text_input[0].input("test-key").run()
+    for p in ["views/practice.py", "views/learn.py", "views/tutor.py"]:
+        at.switch_page(p).run()
+        assert not at.exception, at.exception
+    from gate import ai
+    prov = at.session_state["ai_provider"]
+    assert at.session_state[f"api_key_{prov}"] == "test-key"

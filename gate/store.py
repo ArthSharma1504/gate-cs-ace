@@ -83,6 +83,34 @@ def save(user_id: str, email: str | None, data: dict) -> None:
         s.commit()
 
 
+LESSON_DDL = """
+CREATE TABLE IF NOT EXISTS gate_lessons (
+    lesson_key VARCHAR(400) PRIMARY KEY,
+    content    TEXT NOT NULL,
+    created_at VARCHAR(40) NOT NULL
+)
+"""
+
+
+def lesson_get(key: str) -> str | None:
+    """Shared cache of AI deep-dive lessons, so each topic is generated once for everyone."""
+    with _session() as s:
+        s.execute(text(LESSON_DDL))
+        row = s.execute(text("SELECT content FROM gate_lessons WHERE lesson_key = :k"), {"k": key}).first()
+        s.commit()
+    return row[0] if row else None
+
+
+def lesson_put(key: str, content: str) -> None:
+    with _session() as s:
+        s.execute(text(LESSON_DDL))
+        s.execute(text(
+            "INSERT INTO gate_lessons (lesson_key, content, created_at) VALUES (:k, :c, :t) "
+            "ON CONFLICT (lesson_key) DO UPDATE SET content = excluded.content, created_at = excluded.created_at"),
+            {"k": key, "c": content, "t": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+        s.commit()
+
+
 def delete(user_id: str) -> None:
     with _session() as s:
         s.execute(text("DELETE FROM gate_progress WHERE user_id = :uid"), {"uid": user_id})

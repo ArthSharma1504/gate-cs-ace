@@ -9,20 +9,14 @@ from gate.data.syllabus import SUBJECTS, SYLLABUS
 prog = state.P()
 st.title("🤖 AI Tutor")
 
-with st.sidebar:
-    st.markdown("**AI settings**")
-    provider = st.selectbox("Provider", list(ai.PROVIDERS), key="ai_provider")
-    cfg = ai.PROVIDERS[provider]
-    model = st.selectbox("Model", cfg["models"], key=f"ai_model_{provider}")
-    st.text_input("API key", type="password", key=f"api_key_{provider}",
-                  help="Kept only in your browser session; never saved or shared.")
-    st.caption(f"Get a free key in a minute: [{cfg['key_url']}]({cfg['key_url']})")
-    socratic = st.toggle("Socratic mode (hints first)", value=False)
+provider, model = ai.current()
+cfg = ai.PROVIDERS[provider]
+socratic = st.toggle("Socratic mode — give me hints first, not the full answer", value=False)
 
 has_key = bool(ai.get_key(provider))
 if not has_key:
     st.info(f"The tutor runs on a **free** API key. Create one at [{cfg['key_url']}]({cfg['key_url']}) "
-            "(no payment needed), paste it in the sidebar, and you're set. "
+            "(no payment needed), paste it under **AI tutor settings** in the sidebar, and you're set. "
             "Everything else in the app works without a key.")
 
 tab_chat, tab_gen = st.tabs(["💬 Doubt solver", "🧪 Generate practice questions"])

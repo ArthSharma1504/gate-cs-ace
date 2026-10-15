@@ -43,14 +43,40 @@ Socratic mode is ON: do not give the full solution straight away. Give a hint or
 and reveal the full solution only when the student asks for it or has tried twice."""
 
 
+def settings_sidebar() -> None:
+    """AI provider/model/key inputs, rendered in the sidebar on every page so the key is never dropped."""
+    with st.sidebar.expander("🤖 AI tutor settings", expanded=not current_key()):
+        provider = st.selectbox("Provider", list(PROVIDERS), key="ai_provider")
+        cfg = PROVIDERS[provider]
+        st.selectbox("Model", cfg["models"], key=f"ai_model_{provider}")
+        st.text_input("API key", type="password", key=f"api_key_{provider}",
+                      help="Kept only in your browser session; never saved or shared.",
+                      placeholder="Using the app's shared key" if _secret_key(provider) else "Paste your free key")
+        st.caption(f"Free key in a minute: [{cfg['key_url']}]({cfg['key_url']})")
+
+
+def current() -> tuple[str, str]:
+    provider = st.session_state.get("ai_provider") or next(iter(PROVIDERS))
+    model = st.session_state.get(f"ai_model_{provider}") or PROVIDERS[provider]["models"][0]
+    return provider, model
+
+
+def current_key() -> str | None:
+    return get_key(current()[0])
+
+
+def _secret_key(provider: str) -> str | None:
+    try:
+        return st.secrets.get(PROVIDERS[provider]["secret"]) or None
+    except Exception:
+        return None
+
+
 def get_key(provider: str) -> str | None:
     user_key = st.session_state.get(f"api_key_{provider}")
     if user_key:
         return user_key.strip()
-    try:
-        return st.secrets.get(PROVIDERS[provider]["secret"])
-    except Exception:  # no secrets file
-        return None
+    return _secret_key(provider)
 
 
 class AIError(RuntimeError):
@@ -120,6 +146,15 @@ def _err(r) -> str:
         hint = " This model may be unavailable for your key; pick another in the sidebar."
     return f"API error {r.status_code}: {msg}.{hint}"
 
+
+LESSON_PROMPT = """Teach the GATE CS topic "{topic}" (subject: {subject}) to a student who has read a one-page summary
+and wants to go deeper. Write in clear, simple English with markdown headings:
+### Build the intuition  (explain the core idea with an everyday analogy)
+### Step-by-step method  (how to solve GATE questions on this topic)
+### Two solved GATE-level examples  (one 1-mark, one 2-mark, full working)
+### Common mistakes
+### Quick self-test  (3 short questions; put the answers at the very end under "Answers")
+Keep it under 900 words. Be accurate; if a fact is uncertain, leave it out."""
 
 GEN_PROMPT = """Write {n} new, original GATE CS-style questions.
 Subject: {subject}. Topic: {topic}. Question type: {qtype}. Difficulty: {difficulty}.

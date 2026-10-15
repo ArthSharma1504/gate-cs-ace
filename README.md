@@ -8,6 +8,7 @@ Practice, mock tests, planning and revision all work with no API key. It also ad
 
 | | |
 |---|---|
+| 📚 **Learn** | A built-in lesson for **all 80 topics** of the GATE 2027 CS syllabus: the core idea, a worked GATE-style example and exam traps. Plus check-yourself questions, lecture links, a self-rating that updates the tracker, and an optional AI deep-dive lesson (generated once, then saved for every student). |
 | ✍️ **Practice** | 133 original GATE-style MCQ / MSQ / NAT questions across all 11 sections, with step-by-step solutions. Filter by subject, topic, type and difficulty. Bookmarks and an automatic **mistake notebook**. |
 | ⏱️ **Mock tests** | Full-length mock (65 Q · 100 marks · 180 min, exact GATE split), quick mocks and subject tests. Live timer, GATE-style colour-coded question palette, mark-for-review, and the **real marking scheme** (−1/3, −2/3 for wrong MCQs; no negative for MSQ/NAT). Detailed review after submission. |
 | 🤖 **AI tutor** | Doubt-solver chat that knows the GATE pattern, a Socratic "hints first" mode, one-click "explain my mistake" from any question, and an **AI question generator** that adds fresh questions to your practice pool. |

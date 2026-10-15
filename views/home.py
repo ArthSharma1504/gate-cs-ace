@@ -75,7 +75,8 @@ st.subheader("How to use this app to ace GATE")
 a, b, c = st.columns(3)
 a.markdown("**1 · Plan**\n\nSet your exam date and daily hours in the Study Planner. "
            "Mark what you already know in the Syllabus Tracker so the plan targets your gaps.")
-b.markdown("**2 · Practise daily**\n\nSolve questions topic by topic. Every wrong answer goes to your "
+b.markdown("**2 · Learn, then practise**\n\nStudy each topic in Learn (idea, worked example, traps), then "
+           "solve questions on it. Every wrong answer goes to your "
            "mistake notebook — redo it until it sticks. Ask the AI tutor when stuck.")
 c.markdown("**3 · Test & review**\n\nTake a timed mock every week (daily in the final weeks) with real "
            "GATE marking, then study the analytics to find weak topics.")

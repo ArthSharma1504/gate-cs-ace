@@ -138,7 +138,7 @@ NOTES = {
     "Compiler Design": """
 - Phases: lexical → syntax → semantic → intermediate code → optimisation → code generation.
 - Tokens: keywords, identifiers, operators, constants, punctuation. A string literal is a single token. Comments and whitespace are discarded.
-- FIRST(X): terminals that can begin X (plus ε if X ⇒* ε). FOLLOW(A): terminals that can appear right after A; $ ∈ FOLLOW(start).
+- FIRST(X): terminals that can begin X (plus ε if X ⇒* ε). FOLLOW(A): terminals that can appear right after A; \\$ ∈ FOLLOW(start).
 - LL(1) needs no left recursion and no common prefixes (left-factor). Ambiguous grammars are never LL(1) or LR(k).
 - Power: LL(1) ⊂ LR(1); SLR(1) ⊂ LALR(1) ⊂ LR(1). LALR has the same number of states as SLR (LR(0) items).
 - Merging LR(1) states into LALR can introduce reduce–reduce conflicts, never new shift–reduce conflicts.
